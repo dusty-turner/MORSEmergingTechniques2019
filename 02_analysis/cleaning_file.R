@@ -1,4 +1,4 @@
-data = read_csv("mors_cleaned.csv")
+data = read_csv("01_data/aircraft.csv")
 
 
 data %>% 
