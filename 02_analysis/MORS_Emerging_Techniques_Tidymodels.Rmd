@@ -1,0 +1,85 @@
+---
+title: "MORS Emerging Techniques Tidymodels"
+author: "MAJ Dusty Turner  |  Max Kuhn"
+date: "4 December 2019"
+output: 
+  powerpoint_presentation:
+    slide_level: 2
+    reference_doc: template.pptx
+  fig_caption: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE, warning=FALSE)
+library(knitr)
+library(jpeg)
+```
+
+## Background of `tidymodels`
+
+:::::::::::::: {.columns}
+::: {.column}
+
+- October 2019
+
+- "`tidymodels` is a ''meta-package" for modeling and statistical analysis that share the underlying design philosophy, grammar, and data structures of the tidyverse."
+
+- <https://github.com/tidymodels/tidymodels>
+
+- `install.packages("tidymodels")`
+
+:::
+::: {.column}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,out.width=100, fig.cap="Max Kuhn at West Point Fall 2018"}
+include_graphics("03_presentation_files/max.JPG")
+```
+
+:::
+::::::::::::::
+
+## What We're Going to Do:
+
+- Introduce a Data Problem
+
+  - Flying Hour Challenge
+
+- Show the 'old techniques'
+
+  - imputation
+  - modeling
+  - prediction
+  - model comparison
+
+- Show the new technique
+
+  - `tidymodels`
+
+- Discuss Challenges
+
+## Almost Ready
+
+### My Assumptions About You
+
+- Data Science Background
+
+- Moderate R Background
+
+### Libraries
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(Amelia)
+library(tidymodels)
+```
+
+
+## Flying Hour Challenge
+
+```{r}
+read_csv("01_data/mors_cleaned_ID.csv") %>%
+  janitor::clean_names()
+```
+
