@@ -14,16 +14,19 @@ library(lubridate)
 library(tidymodels)
 library(skimr)
 options(tibble.width = Inf)
+read_csv("C:/Users/dusty.s.turner/Desktop/aircraft_cleaned.csv")
 ```
 
 ## Read in and manipulate data
 
 ```{r read and manipulate}
-rawdata = read_csv("01_data/mors_cleaned_ID.csv") %>%
+rawdata = read_csv("aircraft.csv") %>%
   janitor::clean_names() %>%
   sample_n(1000) %>%
-  select(-c(gain_loss,nmcs_org_percent, nmcs_spt_percent, nmcm_equip_percent, pmcs_org_percent, pmcs_spt_percent, pmcm_org_percent, pmcm_spt_percent)) %>%
-  mutate(as_of_date = mdy(as_of_date)) 
+  select(-c(gain_loss,service_term_date,util_code,nmcs_org_percent, nmcs_spt_percent, nmcm_equip_percent, pmcs_org_percent, pmcs_spt_percent, pmcm_org_percent, pmcm_spt_percent,ric,asset_type)) %>%
+  mutate(as_of_date = mdy(as_of_date)) %>%
+  mutate(niin = as.factor(niin)) %>% 
+  mutate(present_location = if_else(is.na(present_location),"unknown",present_location)) 
 
 skim(rawdata)
 ```
@@ -57,23 +60,23 @@ data_split %>%
   recipe(hours_flown ~ .) %>%
   recipes::step_meanimpute(
     age_years_by_accept_date, fmc_percent,nmcs_percent, mc_percent,nmcm_org_percent,
-    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,pmc_percent,
+    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmc_percent,pmcs_percent,
     pmcm_percent
     ) %>%
-  step_modeimpute(army_accept_date) %>%
+  step_modeimpute(uessr, army_accept_date) %>%
   step_corr(
     age_years_by_accept_date, fmc_percent,nmcs_percent,mc_percent,nmcm_org_percent,
-    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,pmc_percent,
+    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmc_percent,pmcs_percent,
     pmcm_percent
     ) %>%
   step_center(
     age_years_by_accept_date, fmc_percent,nmcs_percent,nmcm_org_percent,
-    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,pmc_percent,
+    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmc_percent,pmcs_percent,
     pmcm_percent
     ) %>%
   step_scale(
     age_years_by_accept_date, fmc_percent,nmcs_percent,nmcm_org_percent,
-    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,
+    nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmc_percent,pmcs_percent,
     pmcm_percent
   ) %>%
   prep()

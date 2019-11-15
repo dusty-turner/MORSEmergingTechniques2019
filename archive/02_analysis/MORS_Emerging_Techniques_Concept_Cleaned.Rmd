@@ -19,7 +19,7 @@ options(tibble.width = Inf)
 ## Read in and manipulate data
 
 ```{r read and manipulate}
-rawdata = read_csv("01_data/mors_cleaned_ID.csv") %>%
+rawdata = read_csv("mors_cleaned_ID.csv") %>%
   janitor::clean_names() %>%
   sample_n(1000) %>%
   select(-c(gain_loss,nmcs_org_percent, nmcs_spt_percent, nmcm_equip_percent, pmcs_org_percent, pmcs_spt_percent, pmcm_org_percent, pmcm_spt_percent)) %>%

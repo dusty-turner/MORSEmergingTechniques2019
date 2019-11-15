@@ -1,0 +1,223 @@
+---
+title: "MORS Emerging Techniques Tidymodels"
+author: "MAJ Dusty Turner  |  Max Kuhn"
+date: "4 December 2019"
+output: 
+  powerpoint_presentation:
+    slide_level: 2
+    reference_doc: template.pptx
+  fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE, warning=FALSE)
+library(knitr)
+library(jpeg)
+```
+
+## Slide to Delete
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,out.width=100, fig.cap="Follow Along!"}
+include_graphics("qrcode.png")
+```
+
+## Who am I?
+
+Army 
+
+- Combat Engineer
+- Platoon Leader / XO / Company Commander
+- Geospatial / Sapper / Route Clearance
+- Hawaii / White Sands Missile Range / Iraq / Afghanistan
+
+Education
+
+- West Point '07
+  - Operations Research, BS
+- Missouri University of Science and Technology '12
+  - Engineering Management, MS
+- THE Ohio State '16
+  - Integrated Systems Engineering, MS
+  - Applied Statistics, Graduate Minor
+
+Data Science
+
+- R User Since '14
+- Catch me on Twitter [`@dtdusty`](www.twitter.com/dtdusty)
+- <http://dusty-turner.netlify.com/>
+
+
+## What am I assuming about you?
+
+:::::::::::::: {.columns}
+::: {.column}
+
+- Data Science Background
+
+- Moderate R Background
+
+- Pretty much a 'super nerd'
+
+:::
+::: {.column}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="www.tenor.com"}
+include_graphics("nerd.gif")
+```
+
+:::
+::::::::::::::
+
+## What are we going to talk about?
+
+:::::::::::::: {.columns}
+::: {.column}
+Lets talk about
+
+- Modeling in R the old way (`caret`)
+
+- Modeling in R the (very) new way (`tidymodels`)
+
+Lets also weave in an example (Flying Hour Challlenge)
+
+:::
+::: {.column}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+include_graphics("tidymodelshex.png")
+```
+
+:::
+::::::::::::::
+
+## Background: Out with "The Old"
+
+`Caret`
+
+- Classification And REgression Training
+
+Functionality
+
+- Inpute Missing Data
+- Split Test/Train/Validate Set
+- Supports a Multitude of Modeling Techniques
+- Supports Cross Validation
+
+Drawbacks
+
+- Requires unique syntax to support each package / imputation technique
+- Not 'tidy' compatible
+
+## Background: In with "The New"
+
+`tidymodels`
+
+- Released in October 2019
+
+Functionality
+
+- Inpute Missing Data 
+- Split Test/Train/Validate Set
+- Supports a Multitude of Modeling Techniques
+- Supports Cross Validation
+- Supports model performance measurements
+
+Advantages
+
+- Streamlines syntax for all model types / packages
+- 'tidy' compatible
+- Easy to compare model performance
+
+## More details of `tidymodels`
+
+:::::::::::::: {.columns}
+::: {.column}
+
+From the documentation:
+
+- "`tidymodels` is a ''meta-package" for modeling and statistical analysis that share the underlying design philosophy, grammar, and data structures of the `tidyverse`."
+
+<https://github.com/tidymodels/tidymodels>
+
+`install.packages("tidymodels")`
+
+Author is Max Kuhn of RStudio [`@topepo`](www.twitter.com/topepo)
+
+:::
+::: {.column}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,out.width=100, fig.cap="Max Kuhn at West Point Fall 2018"}
+# include_graphics("03_presentation_files/max.JPG")
+include_graphics("MaxTemp.JPG")
+```
+
+:::
+::::::::::::::
+
+# The Modeling Process
+
+## Tidymodels Schema
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="https://www.tidyverse.org/"}
+include_graphics("tidyverse.png")
+```
+
+## Tidymodels Schema
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="https://www.tidyverse.org/"}
+include_graphics("tidymodels.png")
+```
+
+## What We're Going to Do:
+
+- Introduce a Data Problem
+
+  - Flying Hour Challenge
+
+- Show the 'old techniques'
+
+  - imputation
+  - modeling
+  - prediction
+  - model comparison
+
+- Show the new technique
+
+  - `tidymodels`
+
+- Discuss Challenges
+
+
+## Libraries
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(Amelia)
+library(tidymodels)
+library(flextable)
+```
+
+
+## Flying Hour Challenge
+
+```{r include=FALSE}
+data = read_csv("01_data/mors_cleaned_ID.csv") %>%
+  janitor::clean_names() 
+```
+
+
+```{r, fig.align='left', fig.width=8}
+read_csv("01_data/mors_cleaned_ID.csv") %>%
+  janitor::clean_names() %>%
+  select(hours_flown, as_of_date,id,id2,id3,mc_percent) %>%
+  head() %>%  flextable() %>% autofit()
+```
+
+## Skimr
+
+```{r}
+skimr::skim(data) %>%
+  knit_print()
+```
+

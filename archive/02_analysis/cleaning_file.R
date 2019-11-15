@@ -1,4 +1,4 @@
-data = read_csv("01_data/aircraft.csv")
+data = read_csv("01_data/mors_cleaned.csv")
 
 
 data %>% 
@@ -9,5 +9,6 @@ data %>%
   group_by(Model) %>%
   mutate(ID3 = paste0(group_indices(),"M")) %>% 
   ungroup() %>%
+  select(-c(CAB,Name,Model)) %>%
   write_csv("mors_cleaned_ID.csv")
 
