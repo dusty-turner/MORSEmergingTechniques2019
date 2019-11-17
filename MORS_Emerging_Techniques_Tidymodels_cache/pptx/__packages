@@ -22,3 +22,6 @@ rsample
 yardstick
 flextable
 wesanderson
+lubridate
+lattice
+caret

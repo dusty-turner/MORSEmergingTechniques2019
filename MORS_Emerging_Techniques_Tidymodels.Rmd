@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE,message=FALSE, warning=FALSE)
 options(scipen = 999)
 library(knitr)
 library(jpeg)
+library(flextable)
+library(lubridate)
 ```
 
 ## Slide to Delete
@@ -75,11 +77,11 @@ include_graphics("03_presentation_files/nerd.gif")
 ::: {.column}
 Lets talk about
 
-- Modeling in R the old way (`caret`)
+- ...modeling in R the old way (`caret`)
 
-- Modeling in R the (very) new way (`tidymodels`)
+- ...modeling in R the (very) new way (`tidymodels`)
 
-Lets also weave in an example (Flying Hour Challlenge)
+- ...an example (Flying Hour Challlenge)
 
 :::
 ::: {.column}
@@ -131,31 +133,44 @@ Advantages
 
 ## More details of `tidymodels`
 
-:::::::::::::: {.columns}
-::: {.column}
-
 From the documentation:
 
 - "`tidymodels` is a ''meta-package" for modeling and statistical analysis that share the underlying design philosophy, grammar, and data structures of the `tidyverse`."
+
+- Imports the following packages:
+
+  - `broom`: takes messy output and makes them 'tidy' compatible
+  - `infer`: modern approach to statistical inference 
+  - `recipes`: general data processor with a modern interface that incorporate feature engineering, imputation, and other help tools
+  - `yardstick`: contains tools for evaluating models (e.g. accuracy, RMSE, etc.)
+  - `tidypredict`: translates some model prediction equations to SQL for high-performance computing
+  - `tidyposterior`: used to compare models using resampling and Bayesian analysis
+  - `tidytext`: contains tidy tools for quantitative text analysis
 
 <https://github.com/tidymodels/tidymodels>
 
 `install.packages("tidymodels")`
 
+## More details of `tidymodels`
+
+:::::::::::::: {.columns}
+::: {.column}
+
 Author is Max Kuhn of RStudio [`@topepo`](www.twitter.com/topepo)
+
+Kuhn, M., & Johnson, K. (2013). Applied predictive modeling. New York: Springer.
 
 :::
 ::: {.column}
 
-```{r echo=FALSE, message=FALSE, warning=FALSE,out.width=100, fig.cap="Max Kuhn at West Point Fall 2018"}
+```{r echo=FALSE, message=FALSE, warning=FALSE,out.width=100, fig.subcap="Max Kuhn at West Point Fall 2018"}
 include_graphics("03_presentation_files/max.JPG")
-# include_graphics("MaxTemp.JPG")
 ```
 
 :::
 ::::::::::::::
 
-# The Modeling Process
+# Where Does This Fit In The Modeling Process?
 
 ## Tidyverse Schema
 
@@ -177,10 +192,7 @@ include_graphics("03_presentation_files/tidymodels.png")
 
 - Show the 'old techniques'
 
-  - imputation
-  - modeling
-  - prediction
-  - model comparison
+  - `caret`
 
 - Show the new technique
 
@@ -193,29 +205,24 @@ include_graphics("03_presentation_files/tidymodels.png")
 
 ```{r}
 library(tidyverse)
-library(janitor)
 library(tidymodels)
-library(flextable)
-library(lubridate)
+library(caret)
 ```
 
-## Flying Hour Challenge
+## Flying Hour Challenge - Inspect the Data
 
 ```{r include=FALSE}
-rawdata = read_csv("01_data/mors_cleaned_ID.csv") %>%
-  janitor::clean_names() 
+rawdata = read_csv("01_data/mors_cleaned_ID_simplify.csv") %>%
+  janitor::clean_names()
 ```
-
 
 ```{r, fig.align='left', fig.width=8}
-read_csv("01_data/mors_cleaned_ID.csv") %>%
-  janitor::clean_names() %>%
-  mutate(as_of_date = mdy(as_of_date)) %>%
-  select(hours_flown, as_of_date,id,id2,id3,mc_percent) %>%
-  head(10) %>%  
-  flextable() %>% 
-  autofit()
+read_csv("01_data/mors_cleaned_ID_simplify.csv") %>%
+  janitor::clean_names() %>% 
+  select(hours_flown, as_of_date,mc_percent,poss_hrs,fmc_percent,age_years_by_accept_date) %>%
+  head(10) %>%  flextable() %>%  autofit()
 ```
+
 
 ## `Skimr` Numeric Variables
 
@@ -240,7 +247,9 @@ skimr::skim(rawdata)  %>%
   flextable() %>% autofit()
 ```
 
-## `Skimr` Character Variables
+## `Skimr` Character and Date Variables
+
+### Character Variables
 
 ```{r echo=FALSE}
 skimr::skim(rawdata)  %>%
@@ -250,7 +259,41 @@ skimr::skim(rawdata)  %>%
   flextable() %>% autofit()
 ```
 
-## Data Issues
+### Date Variables
+
+```{r}
+skimr::skim(rawdata)  %>%
+  filter(type=="Date") %>%
+  select(-type)  %>%
+  pivot_wider(id_cols = variable, names_from = stat) %>%
+  flextable() %>% autofit()
+```
+
+## Flying Hour Challenge - Data Processing
+
+- ensure correct data type
+
+```{r}
+rawdata = read_csv("01_data/mors_cleaned_ID_simplify.csv") %>%
+  janitor::clean_names() %>% 
+  mutate(as_of_date = lubridate::mdy(as_of_date)) 
+```
+
+- remove near zero variance 
+
+```{r include=TRUE, eval=FALSE}
+nearZeroVar()
+```
+
+- linear dependencies 
+
+```{r include=TRUE, eval=FALSE}
+findLinearCombos()
+```
+
+- handle `NA`s (next slide)
+
+## Handle `NA`s
 
 ```{r echo=FALSE}
 rawdata %>%
@@ -262,7 +305,7 @@ rawdata %>%
   mutate(isna = if_else(isna,"Missing","NotMissing")) %>%
   pivot_wider(names_from = isna, values_from = n) %>%
   arrange(-Missing) %>% 
-  head(22) %>% flextable() %>% autofit()
+  head(12) %>% flextable() %>% autofit()
 ```
 
 ## Plot View
@@ -280,7 +323,7 @@ rawdata %>%
   filter(!is.na(Missing)) -> helper
 
 library(wesanderson)
-pal = wes_palette(name = "BottleRocket1", n = 2)
+pal = wes_palette(name = "GrandBudapest2", n = 2)
 
 rawdata %>%
   select(helper$name) %>%
@@ -291,8 +334,8 @@ rawdata %>%
   mutate(isna = is.na(value))  %>%
   mutate(row_id = as.numeric(row_id)) %>%
   mutate(name = str_sub(name,1,7)) %>%
-  ggplot(aes(name, row_id, fill = isna)) +
-    geom_raster(alpha=0.8) +
+  ggplot(aes(x = name,y = row_id, fill = isna)) +
+    geom_raster(alpha=1) +
     scale_fill_manual(name = "",
         values = pal[2:1],
         # values = c('steelblue', 'tomato3'),
@@ -304,151 +347,199 @@ rawdata %>%
   theme(legend.position = "bottom")
 ```
 
-## Caret Piece
+# Caret: Classification And REgression Training
+
+```{r echo=FALSE}
+include_graphics("03_presentation_files/caret.png")
+```
+
+## `Caret`: Preprocess
 
 ```{r}
+preprocessvalues = preProcess(rawdata[,-33], method = c("medianImpute","nzv", "center", "scale"))
+```
 
-library(caret)
+```{r}
+caretimpute = predict(preprocessvalues, rawdata)
+```
 
-maybedata = read_csv("01_data/mors_cleaned_ID.csv") %>%
-  janitor::clean_names() %>%
-  # sample_n(1000) %>%
-  select(-c(gain_loss,nmcs_org_percent, nmcs_spt_percent, nmcm_equip_percent, pmcs_org_percent, pmcs_spt_percent, pmcm_org_percent, pmcm_spt_percent,on_hand_inventory,nmcs_org_days_hrs, nmcs_org_percent, nmcs_spt_days_hrs, nmcm_equip_days_hrs, pmcs_org_days_hrs, pmcs_spt_days_hrs, pmcm_org_days_hrs, pmcm_spt_days_hrs, army_accept_date,id,id2,id3)) %>%
-  mutate(as_of_date = mdy(as_of_date)) 
+## `Caret`: Split in Train/Testing
 
+```{r}
+trainIndex = createDataPartition(caretimpute$hours_flown, p = .7)
+dataTrain = caretimpute[trainIndex$Resample1,]
+dataTest = caretimpute[-trainIndex$Resample1,]
+```
 
+## `Caret`: Build Models 
 
-maybedata %>% Amelia::missmap()
-ncol(maybedata)
-# preprocessvalues = preProcess(caretraw[,-36], method = c("medianImpute","nzv"))
-preprocessvalues = preProcess(maybedata[,-33], method = c("medianImpute","nzv"))
-# caretimpute = predict(preprocessvalues, caretraw)
-caretimpute = predict(preprocessvalues, maybedata)
+```{r}
+caretlm = train(hours_flown ~ ., data = dataTrain,
+                 method = "lm",
+                 trControl = trainControl(method = "none"))
 
-Amelia::missmap(caretimpute)
+caretrf = train(hours_flown ~ ., data = sample_n(dataTrain,5000),
+                 method = "rf",
+                 trControl = trainControl(method = "none"))
 
-trainIndex <- createDataPartition(caretimpute$hours_flown, p = .7) 
+# caretranger = train(hours_flown ~ ., data = sample_n(dataTrain,5000),
+#                  method = "ranger",
+#                  trControl = trainControl(method = "none"))
 
-dataTrain <- caretimpute[trainIndex$Resample1,]
-dataTest  <- caretimpute[-trainIndex$Resample1,]
+caretglm = train(hours_flown ~ ., data = dataTrain,
+                 method = "glmnet",
+                 trControl = trainControl(method = "none"))
+```
 
-fitControl <- trainControl(method = "none")
-# str(dataTrain)
-# summary(lm(hours_flown~.,data = dataTrain))
+## `Caret`: Predict and Evaluate
 
-caretlm <- train(hours_flown ~ ., data = dataTrain, 
-                 method = "lm", 
-                 trControl = fitControl)
+Predict
 
-caretrf <- train(hours_flown ~ ., data = sample_n(dataTrain,5000), 
-                 method = "rf", 
-                 trControl = fitControl)
-
-caretglm <- train(hours_flown ~ ., data = dataTrain, 
-                 method = "glmnet", 
-                 trControl = fitControl)
-
+```{r}
 lm.pred = predict(caretlm, dataTest)
 rf.pred = predict(caretrf, dataTest)
 glm.pred = predict(caretglm, dataTest)
+```
 
-postResample(pred = lm.pred, dataTest$hours_flown)
-postResample(pred = rf.pred, dataTest$hours_flown)
-postResample(pred = glm.pred, dataTest$hours_flown)
-caretlm
+Evaluate Models
 
+```{r include=FALSE}
+LM = postResample(pred = lm.pred, dataTest$hours_flown)
+RF = postResample(pred = rf.pred, dataTest$hours_flown)
+GLM = postResample(pred = glm.pred, dataTest$hours_flown)
+```
+
+```{r echo=FALSE}
+data.frame(LM = LM,RF = RF,GLM = GLM) %>%
+  mutate(model = rownames(.)) %>% 
+  pivot_longer(cols = LM:GLM) %>% 
+  pivot_wider(names_from = model, values_from = value) %>%
+  rename(Model = name) %>%
+  arrange(-RMSE) %>%  flextable() %>% autofit()
+```
+
+# Tidymodels
+
+```{r echo=FALSE}
+include_graphics("03_presentation_files/tidyhex.png")
 ```
 
 
+## `Tidymodels`: Split
 
-
-
-## Split, Prepare, and Inpute Data
 ```{r}
+data_split = rawdata %>% initial_split(prop = .7)
 
-data = maybedata
+data_split 
+```
 
-data_split = data %>% initial_split(prop = .7)
+## `Tidymodels`: Preprocess
 
-# data_split %>%
-#   training()
-# data_split %>%
-#   testing()
-
-flight_recipe = 
+```{r}
+flight_recipe =
 data_split %>%
   training() %>%
   recipe(hours_flown ~ .) %>%
   recipes::step_meanimpute(
-    age_years_by_accept_date, fmc_percent,nmcs_percent, mc_percent,nmcm_org_percent,
+    age_years_by_accept_date, fmc_percent,nmcs_percent, mc_percent,
     nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,pmc_percent,
     pmcm_percent
     ) %>%
   step_corr(
-    age_years_by_accept_date, fmc_percent,nmcs_percent,mc_percent,nmcm_org_percent,
+    age_years_by_accept_date, fmc_percent,nmcs_percent,mc_percent,
     nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,pmc_percent,
     pmcm_percent
     ) %>%
   step_center(
-    age_years_by_accept_date, fmc_percent,nmcs_percent,nmcm_org_percent,
+    age_years_by_accept_date, fmc_percent,nmcs_percent,
     nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,pmc_percent,
     pmcm_percent
     ) %>%
   step_scale(
-    age_years_by_accept_date, fmc_percent,nmcs_percent,nmcm_org_percent,
+    age_years_by_accept_date, fmc_percent,nmcs_percent,
     nmcm_percent,nmcm_spt_percent, nmcm_depot_percent,pmcs_percent,
     pmcm_percent
   ) %>%
   prep()
 ```
 
-## Build Models
+## `Tidymodels`: Preprocess
+
+```{r}
+flight_recipe
+```
+
+## `Tidymodels`: Prepare Training and Testing Data
+
+`Juice` Training Data
+
+```{r}
+flight_training = juice(flight_recipe)
+```
+
+`Bake` Testing Data
+ 
 ```{r}
 flight_testing = flight_recipe %>%
-  bake(training(data_split)) 
+  bake(training(data_split))
+```
 
-flight_training = juice(flight_recipe)
+## `Tidymodels`: Build Models
 
-flight_ranger = 
-  rand_forest(trees = 50, mode = "regression") %>%
-  set_engine("ranger") %>%
-  fit(hours_flown ~ ., data = flight_training)
-
-flight_rf = 
-  rand_forest(trees = 10, mode = "regression") %>%
-  set_engine("randomForest") %>%
-  fit(hours_flown ~ ., data = flight_training)
-
-flight_lm = 
+```{r}
+flight_lm =
   linear_reg(mode = "regression") %>%
   set_engine("lm") %>%
   fit(hours_flown ~ ., data = flight_training)
 
-flight_lasso = 
+flight_rf =
+  rand_forest(trees = 10, mode = "regression") %>%
+  set_engine("randomForest") %>%
+  fit(hours_flown ~ ., data = flight_training)
+
+flight_ranger =
+  rand_forest(trees = 50, mode = "regression") %>%
+  set_engine("ranger") %>%
+  fit(hours_flown ~ ., data = flight_training)
+
+flight_glm =
   linear_reg(mode = "regression") %>%
   set_engine("glmnet") %>%
   fit(hours_flown ~ ., data = flight_training)
 ```
 
-## Make Predictions and Test Models
+## `Tidymodels`: Side Note
+
+Models Currently Available
+
+- `lm`
+- `tree-based`
+- `survival analysis`
+- `bayesian`
+
+## `Tidymodels`: Predictions and Evaluate
+
 ```{r}
 flight_testing %>%
   select(hours_flown) %>%
   bind_cols(
-    predict(flight_ranger, flight_testing) %>% rename(ranger_pred = .pred),
-    predict(flight_rf, flight_testing) %>% rename(rf_pred = .pred),
     predict(flight_lm, flight_testing) %>% rename(lm_pred = .pred),
-    predict(flight_lasso, flight_testing, penalty = 10) %>% rename(lasso_pred = .pred),
+    predict(flight_rf, flight_testing) %>% rename(rf_pred = .pred),
+    predict(flight_ranger, flight_testing) %>% rename(ranger_pred = .pred),
+    predict(flight_glm, flight_testing, penalty = 10) %>% rename(lasso_glm = .pred),
   ) %>%
   pivot_longer(cols = -hours_flown) %>%
   rename(model = name, prediction = value) %>%
   group_by(model) %>%
-  metrics(truth = hours_flown, estimate = prediction) %>% 
-  select(-.estimator) %>% 
+  metrics(truth = hours_flown, estimate = prediction) %>%
+  select(-.estimator) %>%
   pivot_wider(names_from = .metric, values_from = .estimate) %>%
   arrange(rmse)
 ```
 
+## Tidymodels: The Next Fronteir 
+
+Further incorporation of model metrics (cross validation).
 
 ```{r}
 cross_data = vfold_cv(flight_training, v = 10)
@@ -456,3 +547,58 @@ cross_data
 ```
 
 Not quite there yet
+
+## In Summary
+
+`caret`
+
+- 65,800 hits on Google Scholar
+- Proven to be successful
+- Clunky syntax
+
+`tidymodels`
+
+- 122 hits on Google Scholar
+- Streamlined 'tidy' syntax
+- Still in development
+- Backing of R Studio
+
+## Thanks!
+
+:::::::::::::: {.columns}
+::: {.column}
+
+### MAJ Dusty Turner
+
+Twitter: [`@dtdusty`](www.twitter.com/dtdusty)
+
+Eamil: <dusty.s.turner.mil@mail.mil>
+
+Github [dusty-turner](https://github.com/dusty-turner)
+
+Personal Website [https://dusty-turner.netlify.com/](https://dusty-turner.netlify.com/)
+
+:::
+::: {.column}
+
+### Max Kuhn
+
+Twitter [`@topepo`](www.twitter.com/topepo)
+
+Github [topepo](https://github.com/topepo)
+
+:::
+::::::::::::::
+
+## QR Dusty Contact
+
+```{r echo=FALSE}
+include_graphics("03_presentation_files/qrcodecontact.png")
+```
+
+## QR Presentation
+
+```{r echo=FALSE}
+include_graphics("03_presentation_files/qrcode.png")
+```
+
