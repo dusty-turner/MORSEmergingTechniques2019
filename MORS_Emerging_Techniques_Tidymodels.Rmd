@@ -481,7 +481,7 @@ flight_training = juice(flight_recipe)
  
 ```{r}
 flight_testing = flight_recipe %>%
-  bake(training(data_split))
+  bake(testing(data_split))
 ```
 
 ## `Tidymodels`: Build Models
